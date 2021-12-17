@@ -4,7 +4,9 @@ RPC::CommunicatorClient test
 
 | Arg | Description | Default |
 | :-------- | :-------- | :-------- |
-| 1 | token payload | https://google.com |
+| 1 | payload | https://google.com |
+| 2 | interface name | SecurityAgent |
+| 3 | endpoint | /tmp/SecurityAgent/token |
 
 ```shell script
 root@pacexi5:~# /opt/rpc-test 
