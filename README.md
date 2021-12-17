@@ -15,4 +15,4 @@ The table below lists ways to build
 
 | Type | Example |
 | :-------- | :-------- |
-| yocto | devtool add --autorev thunder-samples \\<br>"https://github.com/npoltorapavlo/thunder-samples.git;branch=main"<br>devtool build thunder-samples<br>devtool reset thunder-samples<br>rm -rf workspace/sources/thunder-samples |
+| yocto | `devtool add --autorev thunder-samples "https://github.com/npoltorapavlo/thunder-samples.git;branch=main" && devtool build thunder-samples` |

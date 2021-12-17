@@ -1,5 +1,5 @@
 #ifndef MODULE_NAME
-#define MODULE_NAME Sample_WPEFrameworkErrcode
+#define MODULE_NAME JsonRpc_Test
 #endif
 
 #include <core/core.h>
@@ -8,11 +8,11 @@
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
-using namespace std;
 using namespace WPEFramework;
 
-#define SERVER_DETAILS  "127.0.0.1:9998"
+#define SERVER_DETAILS "127.0.0.1:9998"
 #define MAX_LENGTH 1024
+#define NS_IN_S 1000000000
 
 int CreateToken(string &token) {
   unsigned char buffer[MAX_LENGTH] = {0};
@@ -27,53 +27,56 @@ int CreateToken(string &token) {
   return tokenStatus;
 }
 
-string GetJsonObjectResultString(const JsonObject& jsonObject) {
-  string result;
-  jsonObject.ToString(result);
-  return result;
+string CallsignFromDesignator(const string &designator) {
+  size_t pos = designator.rfind('.');
+
+  return ((pos != string::npos) ? designator.substr(0, pos) : "");
+}
+
+string MethodFromDesignator(const string &designator) {
+  size_t pos = designator.rfind('.');
+
+  return ((pos != string::npos) ? designator.substr(pos + 1) : designator);
 }
 
 struct Call {
   int timeout;
   string callsign;
   string method;
-  JsonObject params;
+  string params;
+  int repeat;
 
-  Call(int t, string designator, string p)
-      : timeout(t), callsign(), method(), params(p) {
-    size_t pos = designator.rfind('.');
-    if (pos != string::npos) {
-      callsign = designator.substr(0, pos);
-      method = designator.substr(pos + 1);
-    } else {
-      method = designator;
-    }
-  }
+  Call(int waitTime, const string &designator, const string &parameters, int count)
+      : timeout(waitTime),
+        callsign(CallsignFromDesignator(designator)),
+        method(MethodFromDesignator(designator)),
+        params(parameters),
+        repeat(count) {}
 };
 
 struct Args {
-  bool useToken;
-  list<Call> calls;
+  bool token;
+  std::list <Call> calls;
 
   Args(int argc, char **argv)
-      : useToken((argc > 1) && (string(argv[1]) == "true")) {
-    for (int i = 2; i + 2 < argc; i += 3) {
-      calls.emplace_back(atoi(argv[i]), argv[i + 1], argv[i + 2]);
+      : token((argc > 1) && (string(argv[1]) == "true")) {
+    for (int i = 2; i + 3 < argc; i += 4) {
+      calls.emplace_back(atoi(argv[i]), argv[i + 1], argv[i + 2], atoi(argv[i + 3]));
     }
   }
 };
 
 typedef Core::ProxyType< JSONRPC::LinkType<Core::JSON::IElement> > Plugin;
-typedef map<string, Plugin> PluginMap;
+typedef std::map<string, Plugin> PluginMap;
 
 int main(int argc, char** argv) {
 
   const Args args(argc, argv);
 
-  Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)));
+  Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)), false /* forced=false */);
 
   string token, query;
-  if (args.useToken) {
+  if (args.token) {
     if (CreateToken(token) > 0) {
       query = "token=" + token;
     }
@@ -83,17 +86,37 @@ int main(int argc, char** argv) {
 
   for (auto const &call : args.calls) {
     auto it = plugins.emplace(std::piecewise_construct,
-        std::forward_as_tuple(call.callsign),
-        std::forward_as_tuple());
+                              std::forward_as_tuple(call.callsign),
+                              std::forward_as_tuple());
 
     if (it.second == true) {
       it.first->second = Plugin::Create(call.callsign, nullptr, false, query);
     }
 
-    JsonObject result;
-    auto errCode = it.first->second->Invoke<JsonObject, JsonObject>(call.timeout, call.method, call.params, result);
-    printf("errCode: %u (%d), result: '%s'\n", errCode, errCode,
-           GetJsonObjectResultString(result).c_str());
+    JsonObject params(call.params);
+
+    for (int i = 0; i < call.repeat; i++) {
+      JsonObject result;
+
+      auto startTime = Core::Time::Now();
+
+      auto errCode = it.first->second->Invoke<JsonObject, JsonObject>(
+          call.timeout, call.method, params, result);
+
+      auto endTime = Core::Time::Now();
+      auto timeDiff = (endTime - startTime).Ticks();
+
+      string str;
+      result.ToString(str);
+
+      printf("errCode: %u (%d), result: '%s' [time:%.6fs, params:%db, result:%db]\n",
+             errCode,
+             errCode,
+             str.c_str(),
+             timeDiff / double(NS_IN_S),
+             call.params.size(),
+             str.size());
+    }
   }
 
   return 0;

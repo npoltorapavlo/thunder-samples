@@ -8,7 +8,8 @@ JSONRPC::LinkType test
 | 2 | timeout | |
 | 3 | designator | |
 | 4 | params | |
-| 5 | ... (Arg 2,3,4) | |
+| 5 | repeat count | |
+| 6 | ... (Arg 2,3,4,5) | |
 
 JSONRPC::LinkType error codes
 
