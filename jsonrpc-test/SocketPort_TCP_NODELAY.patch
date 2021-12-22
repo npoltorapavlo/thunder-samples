@@ -1,0 +1,25 @@
+diff --git a/Source/core/SocketPort.cpp b/Source/core/SocketPort.cpp
+index 79bdad5c..e6cd5283 100644
+--- a/Source/core/SocketPort.cpp
++++ b/Source/core/SocketPort.cpp
+@@ -29,6 +29,7 @@
+ #include <arpa/inet.h>
+ #include <fcntl.h>
+ #include <net/if.h>
++#include <netinet/tcp.h>
+ #define __ERRORRESULT__ errno
+ #define __ERROR_AGAIN__ EAGAIN
+ #define __ERROR_WOULDBLOCK__ EWOULDBLOCK
+@@ -595,6 +596,12 @@ namespace Core {
+         uint32_t receiveBuffer = m_ReceiveBufferSize;
+         uint32_t sendBuffer = m_SendBufferSize;
+ 
++#ifdef __POSIX__
++        int flag = 1;
++        int result = setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
++        TRACE_L1("Set TCP_NODELAY result: %d", result);
++#endif
++
+         if (m_ReceiveBufferSize == static_cast<uint16_t>(~0)) {
+             ::getsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&value, &valueLength);
+ 

@@ -44,3 +44,18 @@ Web error codes
 | Invalid designator | curl -H "Authorization: Bearer $t" \\<br>-d '{"jsonrpc":"2.0","id":"3", "method":"foobar"}' \\<br>http://127.0.0.1:9998/jsonrpc | -32601<br>"Unknown method." |
 | Not running | - | - |
 | Method returns error | curl -H "Authorization: Bearer $t" \\<br>-d '{"jsonrpc":"2.0","id":"3", "method":"Messenger.1.send", "params":{"roomid":"","message":""}}' \\<br>http://127.0.0.1:9998/jsonrpc | 22<br>"ERROR_UNKNOWN_KEY" |
+
+Large data performance
+
+> Performance drops when sending large data frequently.
+> tcpdump shows TCP Zero Window. At the same time, server ACKs indicate the receive buffer isn't full.
+> The reason is the Nagle algorithm and ACK delays (applied when sender writes frequent small amounts of data).
+> JSON-RPC socket buffers are 256 for the client and 1024 for the server. I.e. optimal size of the call is < 256.
+> Sending large data (ex. 5k) is ineffective (ex. 5k is split into 256 bytes, ACK delays, bad performance).
+
+| Description | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 5k | 0.094 | 0.044 | 0.045 | 0.042 | 0.043 | 0.045 | 0.043 | 0.483 | 0.900 | 0.886 |
+| 5k, TCP_NODELAY | 0.034 | 0.031 | 0.026 | 0.028 | 0.028 | 0.028 | 0.032 | 0.034 | 0.028 | 0.025 |
+| 25k | 0.108 | 2.318 | 4.709 | 4.701 | 4.706 | 4.705 | 4.700 | 4.701 | 4.710 | 4.699s |
+| 25k, TCP_NODELAY | 0.140 | 0.139 | 0.144 | 0.140 | 0.140 | 0.141 | 0.140 | 0.140 | 0.145 | 0.142 |
