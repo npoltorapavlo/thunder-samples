@@ -1,5 +1,5 @@
 #ifndef MODULE_NAME
-#define MODULE_NAME JsonRpc_Test
+#define MODULE_NAME Core_Timer
 #endif
 
 #include <core/core.h>
@@ -96,7 +96,7 @@ private:
     }
   }
 
-  WPEFramework::Core::TimerType <TimerJob> baseTimer;
+  Core::TimerType <TimerJob> baseTimer;
   TimerJob m_timerJob;
   bool m_isActive;
   int m_intervalInMs;
@@ -104,7 +104,7 @@ private:
   std::function<void()> onTimeoutCallback;
 };
 
-struct Context {};
+Core::Event timerEvent(false, true);
 
 class ThunderClient {
 private:
@@ -113,43 +113,38 @@ private:
   ThunderClient(const ThunderClient &copy) = delete;
 
 public:
-  ThunderClient(const std::shared_ptr <Context> &context) : m_context(context) {
+  ThunderClient() {
     m_timer.connect(std::bind(&ThunderClient::onTimer, this));
-    m_timer.start(1000);
-  }
-
-  ~ThunderClient() {
-//    Core::SafeSyncType<Core::CriticalSection> scopedLock(m_timedLock);
-//    printf("%s acquired lock\n", __FUNCTION__);
+    m_timer.start(100);
   }
 
 private:
   void onTimer() {
-    Core::SafeSyncType <Core::CriticalSection> scopedLock(m_timedLock);
-    printf("%s acquired lock\n", __FUNCTION__);
+    printf("timer callback start\n");
 
-    sleep(2);
+    timerEvent.SetEvent();
 
-    printf("context %s expired\n", (m_context.expired() ? "is":"is not"));
+    sleep(1);
+
+    printf("timer callback end\n");
   }
 
 private:
   ThunderTimer m_timer;
-  WPEFramework::Core::CriticalSection m_timedLock;
-  std::weak_ptr<Context> m_context;
 };
 
-int main(int argc, char** argv) {
+int main() {
   {
-    std::shared_ptr <Context> context(new Context);
-    {
-      ThunderClient client(context);
+    ThunderClient client;
 
-      sleep(2);
-    }
+    printf("waiting for timer\n");
+
+    timerEvent.Lock();
+
+    printf("timer will destroy\n");
   }
 
-  sleep(2);
+  printf("timer has been destroyed\n");
 
   return 0;
 }
