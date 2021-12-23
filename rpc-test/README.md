@@ -7,6 +7,7 @@ RPC::CommunicatorClient test
 | 1 | payload | https://google.com |
 | 2 | interface name | SecurityAgent |
 | 3 | endpoint | /tmp/SecurityAgent/token |
+| 4 | repeat count | 1 |
 
 ```shell script
 root@pacexi5:~# /opt/rpc-test 

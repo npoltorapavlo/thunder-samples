@@ -12,7 +12,7 @@ using namespace WPEFramework;
 
 #define SERVER_DETAILS "127.0.0.1:9998"
 #define MAX_LENGTH 1024
-#define NS_IN_S 1000000000
+#define TICKS_IN_S 1000000
 
 int CreateToken(string &token) {
   unsigned char buffer[MAX_LENGTH] = {0};
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
              errCode,
              errCode,
              str.c_str(),
-             timeDiff / double(NS_IN_S),
+             timeDiff / double(TICKS_IN_S),
              call.params.size(),
              str.size());
     }

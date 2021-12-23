@@ -10,6 +10,8 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 using namespace WPEFramework;
 
+#define TICKS_IN_S 1000000
+
 auto CreateToken(
     const string& payload,
     const string& name,
@@ -42,21 +44,36 @@ struct Args {
   string payload;
   string name;
   string endpoint;
+  int repeat;
 
   Args(int argc, char **argv)
       : payload((argc > 1) ? argv[1] : "https://google.com"),
         name((argc > 2) ? argv[2] : "SecurityAgent"),
-        endpoint((argc > 3) ? argv[3] : "/tmp/SecurityAgent/token") {}
+        endpoint((argc > 3) ? argv[3] : "/tmp/SecurityAgent/token"),
+        repeat((argc > 4) ? atoi(argv[4]) : 1) {}
 };
 
 int main(int argc, char** argv) {
 
   const Args args(argc, argv);
 
-  string token;
+  for (int i = 0; i < args.repeat; i++) {
+    auto startTime = Core::Time::Now();
 
-  if (CreateToken(args.payload, token) == Core::ERROR_NONE) {
-    printf("Token for '%s' is '%s'\n", args.payload, token.c_str());
+    string token;
+
+    auto errCode = CreateToken(args.payload, token);
+
+    auto endTime = Core::Time::Now();
+    auto timeDiff = (endTime - startTime).Ticks();
+
+    printf("errCode: %u (%d), result: '%s' [time:%.6fs, params:%db, result:%db]\n",
+           errCode,
+           errCode,
+           token.c_str(),
+           timeDiff / double(TICKS_IN_S),
+           args.payload.size(),
+           token.size());
   }
 
   return 0;
