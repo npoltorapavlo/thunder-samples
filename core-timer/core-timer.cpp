@@ -33,14 +33,24 @@ private:
     }
 
   public:
-    uint64_t Timed(const uint64_t scheduledTime);
+    uint64_t Timed(const uint64_t scheduledTime) {
+      if (m_timer != nullptr) {
+        m_timer->Timed();
+      }
+
+      return 0;
+    }
 
   private:
     ThunderTimer *m_timer;
   };
 
 public:
-  ThunderTimer() : baseTimer(64 * 1024, "TestTimer"), m_timerJob(this), m_isActive(false), m_intervalInMs(-1) {}
+  ThunderTimer()
+      : baseTimer(64 * 1024 /* pthread stacksize */, "TestTimer"),
+        m_timerJob(this),
+        m_isActive(false),
+        m_intervalInMs(-1) {}
 
   ~ThunderTimer() {
     stop();

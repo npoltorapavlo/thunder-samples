@@ -20,9 +20,11 @@ auto CreateToken(
 
   uint32_t result = Core::ERROR_OPENING_FAILED;
 
+  // < THREADPOOLCOUNT=1, STACKSIZE=0, MESSAGESLOTS=4 >
   auto engine = Core::ProxyType < RPC::InvokeServerType < 1, 0, 4 >> ::Create();
+
   auto client = Core::ProxyType<RPC::CommunicatorClient>::Create(
-      Core::NodeId(endpoint), Core::ProxyType<Core::IIPCServer>(engine));
+      Core::NodeId(endpoint.c_str()), Core::ProxyType<Core::IIPCServer>(engine));
 
   if ((client.IsValid() == true) && (client->IsOpen() == false)) {
     PluginHost::IAuthenticate *interface =
@@ -62,7 +64,7 @@ int main(int argc, char** argv) {
 
     string token;
 
-    auto errCode = CreateToken(args.payload, token);
+    auto errCode = CreateToken(args.payload, args.name, args.endpoint, token);
 
     auto endTime = Core::Time::Now();
     auto timeDiff = (endTime - startTime).Ticks();
